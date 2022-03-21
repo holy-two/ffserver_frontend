@@ -2,9 +2,11 @@
   import { push } from "svelte-spa-router";
   import Layout from "../layout/index.svelte";
   export let params = { wild: "" };
+
+  $: pathSteps = params.wild.split("/");
 </script>
 
-<Layout>
+<Layout {pathSteps}>
   <div>{params.wild}</div>
   <button
     on:click={() => {

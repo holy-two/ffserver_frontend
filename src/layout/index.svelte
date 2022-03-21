@@ -12,6 +12,8 @@
   import type { IMenu } from "../components/ToolPanelSelect.svelte";
   import PathNavbar from "../components/PathNavbar.svelte";
 
+  export let pathSteps: string[] = [];
+
   let activeTab: Tab = "";
 
   let orderList: IMenu = {
@@ -80,7 +82,7 @@
       {/if}
     </div>
   </div>
-  <PathNavbar />
+  <PathNavbar {pathSteps} />
   <slot />
 </div>
 

@@ -1,4 +1,33 @@
+<script lang="ts" context="module">
+  interface ParseStep {
+    href: string;
+    path: string;
+  }
+</script>
+
 <script lang="ts">
+  import { link } from "svelte-spa-router";
+  export let pathSteps: string[] = [];
+  let navActive = false;
+  let navString = "";
+  let parseSteps: ParseStep[] = [];
+  $: {
+    const result: ParseStep[] = [];
+    for (let i = 0; i < pathSteps.length; i++) {
+      if (i === 0) {
+        result[i] = {
+          path: pathSteps[i],
+          href: `/folder/${pathSteps[i]}`,
+        };
+      } else {
+        result[i] = {
+          path: pathSteps[i],
+          href: `${result[i - 1].href}/${pathSteps[i]}`,
+        };
+      }
+    }
+    parseSteps = result;
+  }
 </script>
 
 <div class="bar">
@@ -13,7 +42,25 @@
       <i class="iconfont icon-arrow-up" />
     </div>
   </div>
-  <div class="path-nav active" />
+  <div class="path-nav" class:active={navActive}>
+    {#if navActive}
+      <div class="input">
+        <input type="text" bind:value={navString} />
+      </div>
+    {:else}
+      <div class="steps">
+        <a href="/folder" use:link class="step main">
+          <i class="iconfont icon-folder-fill" />
+        </a>
+        {#each parseSteps as path}
+          <i class="iconfont icon-step" />
+          <a href={path.href} use:link class="step">
+            {path.path}
+          </a>
+        {/each}
+      </div>
+    {/if}
+  </div>
   <div class="refresh">
     <i class="iconfont icon-refresh" />
   </div>
@@ -25,7 +72,7 @@
     height: 40px;
     align-items: center;
     user-select: none;
-    .steps {
+    & > .steps {
       display: flex;
       align-items: center;
       height: 100%;
@@ -74,6 +121,30 @@
       &.active {
         cursor: text;
         border: rgb(0, 120, 215) solid 1px;
+      }
+      .steps {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        .icon-step {
+          font-size: 20px;
+        }
+        .step {
+          text-decoration: none;
+          font-size: 14px;
+          color: #333;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          &.main {
+            .iconfont {
+              font-size: 20px;
+              color: #ffe896;
+            }
+          }
+        }
       }
     }
     .refresh {

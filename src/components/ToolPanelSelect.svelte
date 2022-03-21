@@ -30,7 +30,7 @@
   onMount(() => {
     document.addEventListener("click", hiddenMenu, false);
   });
-  onMount(() => {
+  onDestroy(() => {
     document.removeEventListener("click", hiddenMenu, false);
   });
 </script>
