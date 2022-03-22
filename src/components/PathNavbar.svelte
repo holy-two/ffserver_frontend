@@ -6,13 +6,14 @@
 
   interface EventKeys {
     refresh: undefined;
+    changeNav: undefined;
   }
 </script>
 
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
 
-  import { link, pop } from "svelte-spa-router";
+  import { push, pop } from "svelte-spa-router";
   export let pathSteps: string[] = [];
   let navActive = false;
   let navString = "";
@@ -56,17 +57,30 @@
       </div>
     {:else}
       <div class="steps">
-        <a href="/folder" use:link class="step main">
+        <a href="/folder" class="step main">
           <i
             class="iconfont {parseSteps.length === 0
               ? 'icon-server'
               : 'icon-folder-fill'}"
+            on:click|preventDefault={() => {
+              push("/folder").then(() => {
+                dispatch("changeNav");
+              });
+            }}
           />
           {parseSteps.length === 0 ? "FFServer" : ""}
         </a>
         {#each parseSteps as path}
           <i class="iconfont icon-step" />
-          <a href={path.href} use:link class="step">
+          <a
+            href={path.href}
+            class="step"
+            on:click|preventDefault={() => {
+              push(path.href).then(() => {
+                dispatch("changeNav");
+              });
+            }}
+          >
             {path.path}
           </a>
         {/each}

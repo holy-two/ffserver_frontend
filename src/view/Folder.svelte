@@ -12,14 +12,29 @@
     type: "file";
     fileType: string;
     size: string;
+    download: string;
   }
 
   type Item = FileItem | FolderItem;
 </script>
 
 <script lang="ts">
+  import { download, ls } from "../api/cmd";
+  import dayjs from "dayjs";
+
   import Layout from "../layout/index.svelte";
+  import {
+    defaultType,
+    fileicon_map,
+    filename_map,
+    defaultIcon,
+  } from "../data/fileTypeMap";
+  import { push, pop } from "svelte-spa-router";
+  import { onMount } from "svelte";
   export let params = { wild: "" };
+
+  const fmtTime = (dt: Date | string | number) =>
+    dayjs(dt).format("YYYY/MM/DD hh:mm:ss");
 
   $: pathSteps = params.wild.split("/").filter((p) => !!p);
   let fileInfoWidth = 278;
@@ -37,31 +52,54 @@
     fileInfoWidth = fileInfoThis.clientWidth ?? 278;
   };
 
-  let fileList: Item[] = [
-    {
-      type: "folder",
-      name: ".test",
-      modify: "2021/10/15 15:28",
-      created: "2021/10/15 15:28",
-    },
-    {
-      type: "file",
-      name: "a.py",
-      modify: "2021/10/15 15:28",
-      created: "2021/10/15 15:28",
-      fileType: "python",
-      size: "200kB",
-    },
-    {
-      type: "file",
-      name: "a.js",
-      modify: "2021/10/15 15:28",
-      created: "2021/10/15 15:28",
-      fileType: "javascript",
-      size: "200kB",
-    },
-  ];
+  let fileList: Item[] = [];
   let activeListItem: Item = null;
+  const folderDbClick = (item: FolderItem) => {
+    let comePath = location.hash.replace("#/", "/");
+    if (item.name[0] === "/") {
+      comePath += item.name;
+    } else {
+      comePath += "/" + item.name;
+    }
+    push(comePath).then(() => {
+      refreshLs();
+    });
+  };
+  const refreshLs = () => {
+    fileList = [];
+    ls(location.hash.replace("#/folder", ""))
+      .then((res) => {
+        fileList = res.map((item) => {
+          if (item.type === "folder") {
+            return {
+              type: "folder",
+              name: item.name,
+              modify: fmtTime(item.mtime),
+              created: fmtTime(item.ctime),
+            } as FolderItem;
+          } else {
+            const ftype = item.name.split(".");
+            return {
+              type: "file",
+              name: item.name,
+              modify: fmtTime(item.mtime),
+              created: fmtTime(item.ctime),
+              size: item.size,
+              fileType:
+                filename_map?.[ftype.at(-1).toLowerCase()] ?? defaultType,
+              download: `${location.hash.replace("#/folder", "")}/${item.name}`,
+            } as FileItem;
+          }
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+        pop();
+      });
+  };
+  onMount(() => {
+    refreshLs();
+  });
 </script>
 
 <svelte:body
@@ -69,9 +107,10 @@
   on:mouseup={mouseupFileInfoHandle}
   on:mousemove={resizeFileInfoHandle} />
 
-<Layout {pathSteps}>
+<Layout {pathSteps} on:refresh={refreshLs} on:changeNav={refreshLs}>
   <div
     class="container"
+    on:click={() => (activeListItem = undefined)}
     on:blur={mouseupFileInfoHandle}
     on:mouseup={mouseupFileInfoHandle}
     draggable={false}
@@ -92,6 +131,7 @@
               {#if item.type === "folder"}
                 <tr
                   class:active={activeListItem === item}
+                  on:dblclick={() => folderDbClick(item)}
                   on:click={() => (activeListItem = item)}
                 >
                   <td>
@@ -105,10 +145,20 @@
               {:else}
                 <tr
                   class:active={activeListItem === item}
-                  on:click={() => (activeListItem = item)}
+                  on:dblclick={() => {
+                    // console.log(item.download);
+                    download(item.download, item.name);
+                  }}
+                  on:click|stopPropagation={() => (activeListItem = item)}
                 >
                   <td>
-                    <i class="iconfont icon-file" />
+                    <i
+                      class="iconfont icon-{fileicon_map?.[item.fileType]
+                        ?.icon ?? defaultIcon.icon}"
+                      style={fileicon_map?.[item.fileType]?.color
+                        ? `color:${fileicon_map?.[item.fileType]?.color}`
+                        : ""}
+                    />
                     {item.name}
                   </td>
                   <td>{item.modify}</td>
@@ -150,7 +200,13 @@
               {#if activeListItem.type === "folder"}
                 <i class="iconfont icon-folder-fill" />
               {:else}
-                <i class="iconfont icon-file" />
+                <i
+                  class="iconfont icon-{fileicon_map?.[activeListItem.fileType]
+                    ?.icon ?? defaultIcon.icon}"
+                  style={fileicon_map?.[activeListItem.fileType]?.color
+                    ? `color:${fileicon_map?.[activeListItem.fileType]?.color}`
+                    : ""}
+                />
               {/if}
             {:else}
               <i class="iconfont icon-folder" />

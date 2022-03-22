@@ -1,5 +1,5 @@
 <script context="module" lang="ts">
-  export const tabs = ["File", "View"];
+  export const tabs = ["File"];
 
   type Tab = "File" | "View" | (string & {});
 </script>
@@ -76,7 +76,7 @@
       {/if}
     </div>
   </div>
-  <PathNavbar {pathSteps} on:refresh />
+  <PathNavbar {pathSteps} on:refresh on:changeNav />
   <div class="slot-wrapper">
     <slot />
   </div>
