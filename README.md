@@ -1,11 +1,16 @@
 # FFServer Frontend
-一个本地文件服务器的前端部分 
+一个本地文件服务器的前端部分，本质目的是为了解决当你不想下载QQ，微信等国产软件，但是又想跟电脑交换文件的情况，将后端部分启动后访问即可访问
+
 后端部分：[nanarino/ffserver](https://github.com/nanarino/ffserver)
 
 ## 启动
 ```bash
 yarn dev
 ```
+
+## 效果截图
+
+![image-20220322170942153](https://raw.githubusercontent.com/mowtwo/pic-go/main/markdown/image-20220322170942153.png)
 
 ## TODO
 
