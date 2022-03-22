@@ -3,10 +3,16 @@
     href: string;
     path: string;
   }
+
+  interface EventKeys {
+    refresh: undefined;
+  }
 </script>
 
 <script lang="ts">
-  import { link } from "svelte-spa-router";
+  import { createEventDispatcher } from "svelte";
+
+  import { link, pop } from "svelte-spa-router";
   export let pathSteps: string[] = [];
   let navActive = false;
   let navString = "";
@@ -28,17 +34,18 @@
     }
     parseSteps = result;
   }
+  const dispatch = createEventDispatcher<EventKeys>();
 </script>
 
 <div class="bar">
   <div class="steps">
-    <div class="step prev">
+    <!-- <div class="step prev">
       <i class="iconfont icon-prev" />
     </div>
     <div class="step next">
       <i class="iconfont icon-next" />
-    </div>
-    <div class="step back">
+    </div> -->
+    <div class="step back" on:click={() => pop()}>
       <i class="iconfont icon-arrow-up" />
     </div>
   </div>
@@ -50,7 +57,12 @@
     {:else}
       <div class="steps">
         <a href="/folder" use:link class="step main">
-          <i class="iconfont icon-folder-fill" />
+          <i
+            class="iconfont {parseSteps.length === 0
+              ? 'icon-server'
+              : 'icon-folder-fill'}"
+          />
+          {parseSteps.length === 0 ? "FFServer" : ""}
         </a>
         {#each parseSteps as path}
           <i class="iconfont icon-step" />
@@ -61,7 +73,7 @@
       </div>
     {/if}
   </div>
-  <div class="refresh">
+  <div class="refresh" on:click={() => dispatch("refresh")}>
     <i class="iconfont icon-refresh" />
   </div>
 </div>
@@ -128,6 +140,8 @@
         height: 100%;
         .icon-step {
           font-size: 20px;
+          font-weight: bold;
+          color: rgb(105, 105, 105);
         }
         .step {
           text-decoration: none;
@@ -137,11 +151,27 @@
           display: flex;
           align-items: center;
           justify-content: center;
+          cursor: default;
+          transition: all 0.2s ease-out;
+          box-sizing: border-box;
+          border: transparent 1px solid;
+          padding: 0 4px;
+          &:hover {
+            background-color: rgb(237, 244, 252);
+            border-color: rgb(168, 210, 253);
+          }
 
           &.main {
+            font-size: 12px;
             .iconfont {
               font-size: 20px;
-              color: #ffe896;
+              &.icon-folder-fill {
+                color: #ffe896;
+              }
+              &.icon-server {
+                color: rgb(109, 199, 255);
+                margin-right: 6px;
+              }
             }
           }
         }
@@ -153,9 +183,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border: #ddd 1px solid;
       transition: all 0.2s ease-out;
       margin-right: 10px;
+      border: #ddd 1px solid;
       &:hover {
         background-color: rgb(237, 244, 252);
         border-color: rgb(168, 210, 253);

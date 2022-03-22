@@ -6,7 +6,6 @@
 
 <script lang="ts">
   import ToolPanelGroup from "../components/ToolPanelGroup.svelte";
-  import { onDestroy, onMount } from "svelte";
   import { fade } from "svelte/transition";
   import ToolPanelSelect from "../components/ToolPanelSelect.svelte";
   import type { IMenu } from "../components/ToolPanelSelect.svelte";
@@ -24,14 +23,9 @@
   const hiddenToolEject = () => {
     activeTab = "";
   };
-  onMount(() => {
-    document.addEventListener("click", hiddenToolEject, false);
-  });
-  onDestroy(() => {
-    document.removeEventListener("click", hiddenToolEject, false);
-  });
 </script>
 
+<svelte:body on:click={hiddenToolEject} />
 <div class="layout">
   <div class="header">
     <i class="iconfont icon-folder-fill header-icon" />
@@ -82,12 +76,21 @@
       {/if}
     </div>
   </div>
-  <PathNavbar {pathSteps} />
-  <slot />
+  <PathNavbar {pathSteps} on:refresh />
+  <div class="slot-wrapper">
+    <slot />
+  </div>
 </div>
 
 <style lang="scss">
   .layout {
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    background-color: #fff;
+    top: 0;
+    left: 0;
+    overflow: hidden;
     .header {
       height: 28px;
       font-size: 12px;
@@ -106,6 +109,7 @@
     }
     .tools {
       position: relative;
+      height: 26px;
       .tabs {
         height: 26px;
         display: flex;
@@ -221,6 +225,9 @@
           align-items: center;
         }
       }
+    }
+    .slot-wrapper {
+      height: calc(100vh - 28px - 26px - 40px);
     }
   }
 </style>
