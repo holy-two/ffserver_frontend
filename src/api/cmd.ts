@@ -64,6 +64,13 @@ export async function post<D>(cmd: string, path: string, data: Record<string, an
   return await handleResp<D>(res)
 }
 
+export async function del<D>(cmd: string, path: string) {
+  const res = await fetch(joinCmd(cmd) + '/' + path, {
+    method: 'DELETE'
+  })
+  return await handleResp<D>(res)
+}
+
 export interface LsResult {
   ctime: string
   mime: string
@@ -82,6 +89,15 @@ export async function ls<D extends LsResult[] = LsResult[]>(path: string) {
   }
 }
 
+export async function rm_f<D extends LsResult[] = LsResult[]>(path: string) {
+  try {
+    const res = await del<D>('file', path)
+    return res
+  } catch (e) {
+    throw new Error(err('rm -f', e))
+  }
+}
+
 export async function download(path: string, filename: string) {
   const a = document.createElement('a')
   a.href = joinCmd('file') + '/' + path
@@ -92,7 +108,7 @@ export async function download(path: string, filename: string) {
 export async function mkdir(path: string) {
   const folder = prompt('new folder name', 'new folder')
   if (!folder) {
-    return
+    return false
   }
   try {
     await post('folder', path, {

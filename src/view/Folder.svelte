@@ -36,6 +36,7 @@
   import { onMount } from "svelte";
   import type { EventKeys as LayoutEvents } from "../layout/index.svelte";
   import promiseCatch from "../util/promiseCatch";
+  import ContentMenu from "../components/ContentMenu.svelte";
   export let params = { wild: "" };
 
   const fmtTime = (dt: Date | string | number) =>
@@ -125,9 +126,13 @@
   ) => {
     const { type } = e.detail;
     if (type === "mkdir") {
-      const [res, err] = await promiseCatch<true, any>(mkdir(getCurretPath()));
+      const [res, err] = await promiseCatch<boolean, any>(
+        mkdir(getCurretPath())
+      );
       if (!err && res) {
         refreshLs();
+      } else if (!res) {
+        return;
       } else {
         alert(err);
       }
@@ -210,6 +215,9 @@
                     if (activeListItem === item) {
                       download(item.download, item.name);
                     }
+                  }}
+                  on:contextmenu={() => {
+                    activeListItem = item;
                   }}
                   on:dblclick={() => download(item.download, item.name)}
                   on:click|stopPropagation={() => (activeListItem = item)}
@@ -311,6 +319,10 @@
     </div>
   </div>
 </Layout>
+
+<div class="contentmenus">
+  <ContentMenu />
+</div>
 
 <style lang="scss">
   .container {
@@ -475,5 +487,10 @@
         margin: 0 10px;
       }
     }
+  }
+
+  .contentmenu {
+    position: fixed;
+    z-index: 999999;
   }
 </style>
