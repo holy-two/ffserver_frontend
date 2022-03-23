@@ -2,6 +2,33 @@
   export const tabs = ["File"];
 
   type Tab = "File" | "View" | (string & {});
+
+  interface FileMenuItem {
+    text: string;
+    type: FileMenuType;
+    icon: string;
+  }
+
+  export type FileMenuType = "upload" | "mkdir";
+
+  export interface EventKeys {
+    FileMenuClick: {
+      type: FileMenuType;
+    };
+  }
+
+  const fileMenu: FileMenuItem[] = [
+    {
+      text: "Upload File",
+      type: "upload",
+      icon: "upload",
+    },
+    {
+      text: "New Folder",
+      type: "mkdir",
+      icon: "new-folder",
+    },
+  ];
 </script>
 
 <script lang="ts">
@@ -10,8 +37,10 @@
   import ToolPanelSelect from "../components/ToolPanelSelect.svelte";
   import type { IMenu } from "../components/ToolPanelSelect.svelte";
   import PathNavbar from "../components/PathNavbar.svelte";
+  import { createEventDispatcher, tick } from "svelte";
 
   export let pathSteps: string[] = [];
+  export let pathNavLoading: boolean = false;
 
   let activeTab: Tab = "";
 
@@ -23,6 +52,8 @@
   const hiddenToolEject = () => {
     activeTab = "";
   };
+
+  const dispatch = createEventDispatcher<EventKeys>();
 </script>
 
 <svelte:body on:click={hiddenToolEject} />
@@ -55,9 +86,20 @@
       {#if activeTab === "File"}
         <div class="menu" out:fade={{ duration: 200 }}>
           <div class="menu-wrapper">
-            <div class="menu-item">
-              <i class="iconfont icon-upload" /> Upload File
-            </div>
+            {#each fileMenu as menu}
+              <div
+                class="menu-item"
+                on:click={() => {
+                  dispatch("FileMenuClick", { type: menu.type });
+                  tick().then(() => {
+                    activeTab = "";
+                  });
+                }}
+              >
+                <i class="iconfont icon-{menu.icon}" />
+                {menu.text}
+              </div>
+            {/each}
           </div>
         </div>
       {:else if activeTab === "View"}
@@ -76,7 +118,12 @@
       {/if}
     </div>
   </div>
-  <PathNavbar {pathSteps} on:refresh on:changeNav />
+  <PathNavbar
+    {pathSteps}
+    on:refresh
+    on:changeNav
+    bind:loading={pathNavLoading}
+  />
   <div class="slot-wrapper">
     <slot />
   </div>
@@ -169,6 +216,7 @@
       }
       .eject {
         position: relative;
+        z-index: 99;
         .panel,
         .menu {
           position: absolute;
@@ -210,7 +258,12 @@
             .iconfont {
               font-size: 30px;
               margin-right: 4px;
-              color: rgb(68, 120, 210);
+              &.icon-upload {
+                color: rgb(68, 120, 210);
+              }
+              &.icon-new-folder {
+                color: #f0d05f;
+              }
             }
           }
         }

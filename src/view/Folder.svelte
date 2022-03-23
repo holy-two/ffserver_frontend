@@ -16,10 +16,13 @@
   }
 
   type Item = FileItem | FolderItem;
+
+  let refreshTimer: unknown;
+  let refreshHiddenTimer: unknown;
 </script>
 
 <script lang="ts">
-  import { download, ls } from "../api/cmd";
+  import { download, ls, mkdir, upload } from "../api/cmd";
   import dayjs from "dayjs";
 
   import Layout from "../layout/index.svelte";
@@ -31,6 +34,8 @@
   } from "../data/fileTypeMap";
   import { push, pop } from "svelte-spa-router";
   import { onMount } from "svelte";
+  import type { EventKeys as LayoutEvents } from "../layout/index.svelte";
+  import promiseCatch from "../util/promiseCatch";
   export let params = { wild: "" };
 
   const fmtTime = (dt: Date | string | number) =>
@@ -65,49 +70,100 @@
       refreshLs();
     });
   };
+  let refreshLoading = false;
   const refreshLs = () => {
-    fileList = [];
-    ls(location.hash.replace("#/folder", ""))
-      .then((res) => {
-        fileList = res.map((item) => {
-          if (item.type === "folder") {
-            return {
-              type: "folder",
-              name: item.name,
-              modify: fmtTime(item.mtime),
-              created: fmtTime(item.ctime),
-            } as FolderItem;
-          } else {
-            const ftype = item.name.split(".");
-            return {
-              type: "file",
-              name: item.name,
-              modify: fmtTime(item.mtime),
-              created: fmtTime(item.ctime),
-              size: item.size,
-              fileType:
-                filename_map?.[ftype.at(-1).toLowerCase()] ?? defaultType,
-              download: `${location.hash.replace("#/folder", "")}/${item.name}`,
-            } as FileItem;
-          }
+    clearTimeout(refreshTimer as number);
+    clearTimeout(refreshHiddenTimer as number);
+    refreshLoading = true;
+    refreshTimer = setTimeout(() => {
+      fileList = [];
+      ls(getCurretPath())
+        .then((res) => {
+          fileList = res.map((item) => {
+            if (item.type === "folder") {
+              return {
+                type: "folder",
+                name: item.name,
+                modify: fmtTime(item.mtime),
+                created: fmtTime(item.ctime),
+              } as FolderItem;
+            } else {
+              const ftype = item.name.split(".");
+              return {
+                type: "file",
+                name: item.name,
+                modify: fmtTime(item.mtime),
+                created: fmtTime(item.ctime),
+                size: item.size,
+                fileType:
+                  filename_map?.[ftype.at(-1).toLowerCase()] ?? defaultType,
+                download: `${getCurretPath()}/${item.name}`,
+              } as FileItem;
+            }
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+          pop();
+        })
+        .finally(() => {
+          refreshHiddenTimer = setTimeout(() => {
+            refreshLoading = false;
+          }, 2000);
         });
-      })
-      .catch((err) => {
-        console.log(err);
-        pop();
-      });
+    }, 300);
   };
   onMount(() => {
     refreshLs();
   });
+
+  const getCurretPath = () =>
+    location.hash.replace("#/folder", "/").replace("//", "/");
+
+  const fileMenuClickHandle = async (
+    e: CustomEvent<LayoutEvents["FileMenuClick"]>
+  ) => {
+    const { type } = e.detail;
+    if (type === "mkdir") {
+      const [res, err] = await promiseCatch<true, any>(mkdir(getCurretPath()));
+      if (!err && res) {
+        refreshLs();
+      } else {
+        alert(err);
+      }
+    } else if (type === "upload") {
+      const [res, err] = await promiseCatch<boolean, any>(
+        upload(getCurretPath())
+      );
+      if (!err && res) {
+        refreshLs();
+      } else if (!res) {
+        return;
+      } else {
+        alert(err);
+      }
+    }
+  };
+
+  const windowHashChangeHandle = async () => {
+    refreshLs();
+  };
 </script>
 
+<svelte:window on:hashchange={windowHashChangeHandle} />
 <svelte:body
   on:blur={mouseupFileInfoHandle}
   on:mouseup={mouseupFileInfoHandle}
-  on:mousemove={resizeFileInfoHandle} />
+  on:mousemove={resizeFileInfoHandle}
+  on:contextmenu|preventDefault />
 
-<Layout {pathSteps} on:refresh={refreshLs} on:changeNav={refreshLs}>
+<Layout
+  {pathSteps}
+  on:refresh={refreshLs}
+  on:changeNav={refreshLs}
+  on:FileMenuClick={fileMenuClickHandle}
+  bind:pathNavLoading={refreshLoading}
+>
   <div
     class="container"
     on:click={() => (activeListItem = undefined)}
@@ -117,7 +173,7 @@
   >
     <div class="content">
       <div class="file-list">
-        <table>
+        <table on:click|stopPropagation>
           <thead>
             <tr>
               <th>Name</th>
@@ -131,6 +187,11 @@
               {#if item.type === "folder"}
                 <tr
                   class:active={activeListItem === item}
+                  on:touchend={() => {
+                    if (activeListItem === item) {
+                      folderDbClick(item);
+                    }
+                  }}
                   on:dblclick={() => folderDbClick(item)}
                   on:click={() => (activeListItem = item)}
                 >
@@ -145,10 +206,12 @@
               {:else}
                 <tr
                   class:active={activeListItem === item}
-                  on:dblclick={() => {
-                    // console.log(item.download);
-                    download(item.download, item.name);
+                  on:touchend={() => {
+                    if (activeListItem === item) {
+                      download(item.download, item.name);
+                    }
                   }}
+                  on:dblclick={() => download(item.download, item.name)}
                   on:click|stopPropagation={() => (activeListItem = item)}
                 >
                   <td>
@@ -177,6 +240,7 @@
           class="moveable"
           class:active={fileInfoResizable}
           on:mousedown={(e) => {
+            fileInfoWidth = fileInfoThis.clientWidth;
             fileInfoResizable = true;
             fileInfoMovePoint = e.pageX;
           }}
@@ -265,6 +329,9 @@
         height: 100%;
         table {
           width: 100%;
+          border: none;
+          border-collapse: unset;
+          border-spacing: 0;
           th {
             font-size: 12px;
             font-weight: normal;
@@ -277,6 +344,7 @@
             white-space: nowrap;
             text-overflow: ellipsis;
             transition: all 0.2s ease-out;
+            border: none;
             &:hover {
               background-color: rgb(217, 235, 249);
             }
@@ -317,6 +385,7 @@
             height: 24px;
             color: #333;
             padding-left: 20px;
+            border: none;
             .iconfont {
               font-size: 16px;
               &.icon-folder-fill {

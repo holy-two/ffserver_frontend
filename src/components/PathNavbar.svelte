@@ -15,6 +15,7 @@
 
   import { push, pop } from "svelte-spa-router";
   export let pathSteps: string[] = [];
+  export let loading: boolean = false;
   let navActive = false;
   let navString = "";
   let parseSteps: ParseStep[] = [];
@@ -51,6 +52,9 @@
     </div>
   </div>
   <div class="path-nav" class:active={navActive}>
+    {#if loading}
+      <div class="loading" />
+    {/if}
     {#if navActive}
       <div class="input">
         <input type="text" bind:value={navString} />
@@ -80,8 +84,9 @@
                 dispatch("changeNav");
               });
             }}
+            title={path.path}
           >
-            {path.path}
+            <div>{path.path}</div>
           </a>
         {/each}
       </div>
@@ -93,6 +98,14 @@
 </div>
 
 <style lang="scss">
+  @keyframes run {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(200%);
+    }
+  }
   .bar {
     display: flex;
     height: 40px;
@@ -144,6 +157,28 @@
       border: #ddd 1px solid;
       border-right: none;
       transition: all 0.2s ease-out;
+      position: relative;
+      .loading {
+        position: absolute;
+        z-index: 2;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        &::after {
+          width: 100%;
+          height: 100%;
+          content: "";
+          display: block;
+          transform: translateX(-100%);
+          background-image: linear-gradient(
+            to right,
+            rgba(0, 0, 0, 0),
+            rgba(7, 190, 7, 0.37)
+          );
+          animation: run 2s -1s linear infinite;
+        }
+      }
       &.active {
         cursor: text;
         border: rgb(0, 120, 215) solid 1px;
@@ -152,6 +187,9 @@
         display: flex;
         align-items: center;
         height: 100%;
+        position: relative;
+        z-index: 1;
+        overflow: hidden;
         .icon-step {
           font-size: 20px;
           font-weight: bold;
@@ -164,12 +202,18 @@
           height: 100%;
           display: flex;
           align-items: center;
-          justify-content: center;
           cursor: default;
           transition: all 0.2s ease-out;
           box-sizing: border-box;
           border: transparent 1px solid;
           padding: 0 4px;
+          max-width: 100px;
+          & > div {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+          }
           &:hover {
             background-color: rgb(237, 244, 252);
             border-color: rgb(168, 210, 253);

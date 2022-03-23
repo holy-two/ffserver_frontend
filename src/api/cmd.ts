@@ -20,22 +20,19 @@ export interface ValidError {
   }[]
 }
 
-function isResult<D>(res: Response, json: any): json is D {
+function isResult<D>(res: Response, _json: any): _json is D {
   return res.status === 200
 }
 
-function isNotFount(res: Response, json: any): json is NotFound {
+function isNotFount(res: Response, _json: any): _json is NotFound {
   return res.status === 404
 }
 
-function isValidError(res: Response, json: any): json is ValidError {
+function isValidError(res: Response, _json: any): _json is ValidError {
   return res.status === 422
 }
 
-export async function get<D>(cmd: string, path: string) {
-  const res = await fetch(joinCmd(cmd) + '/' + path, {
-    method: 'GET'
-  })
+async function handleResp<D>(res: Response) {
   const json = await res.json()
   if (isResult<D>(res, json)) {
     return json
@@ -48,19 +45,23 @@ export async function get<D>(cmd: string, path: string) {
   }
 }
 
-export function post(cmd: string, path: string, data: Record<string, any>) {
-  const u = new URLSearchParams(data)
-  return fetch(joinCmd(cmd) + '/' + path, {
-    method: 'POST',
-    body: u.toString(),
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    }
-  }).then(res => {
-    return res.json()
-  }).catch(res => {
-    err(cmd, 'post error')
+export async function get<D>(cmd: string, path: string) {
+  const res = await fetch(joinCmd(cmd) + '/' + path, {
+    method: 'GET'
   })
+  return await handleResp<D>(res)
+}
+
+export async function post<D>(cmd: string, path: string, data: Record<string, any>) {
+  const fd = new FormData()
+  for (const key in data) {
+    fd.append(key, data[key])
+  }
+  const res = await fetch(joinCmd(cmd) + '/' + path, {
+    method: 'POST',
+    body: fd,
+  })
+  return await handleResp<D>(res)
 }
 
 export interface LsResult {
@@ -86,4 +87,47 @@ export async function download(path: string, filename: string) {
   a.href = joinCmd('file') + '/' + path
   a.download = filename
   a.click()
+}
+
+export async function mkdir(path: string) {
+  const folder = prompt('new folder name', 'new folder')
+  if (!folder) {
+    return
+  }
+  try {
+    await post('folder', path, {
+      dirname: folder
+    })
+    return true as const
+  } catch (e) {
+    throw new Error(err('mkdir', e))
+  }
+}
+
+
+
+export function upload(path: string) {
+  return new Promise<boolean>((resolve, reject) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.addEventListener('change', async () => {
+      const file = input.files[0]
+      if (!file) {
+        return reject('file select error')
+      }
+      if (confirm(`Do you want to upload ${file.name}`)) {
+        try {
+          await post('file', path, {
+            file
+          })
+          resolve(true)
+        } catch (e) {
+          reject(err('upload', e))
+        }
+      } else {
+        resolve(false)
+      }
+    })
+    input.click()
+  })
 }
