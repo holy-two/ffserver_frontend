@@ -247,19 +247,19 @@
           draggable={false}
         />
         <div class="data">
-          <div class="title">
+          <div class="title" style={`width:${fileInfoWidth - 40}px`}>
             {#if activeListItem}
               {activeListItem.name}
             {:else}
               {fileList.length} Items
             {/if}
           </div>
-          <div class="type">
+          <div class="type" style={`width:${fileInfoWidth - 40}px`}>
             {#if activeListItem && activeListItem.type === "file"}
               {activeListItem.fileType} File
             {/if}
           </div>
-          <div class="icon">
+          <div class="icon" style={`width:${fileInfoWidth - 40}px`}>
             {#if activeListItem}
               {#if activeListItem.type === "folder"}
                 <i class="iconfont icon-folder-fill" />
@@ -277,7 +277,7 @@
             {/if}
           </div>
           {#if activeListItem}
-            <div class="others">
+            <div class="others" style={`width:${fileInfoWidth - 40}px`}>
               <class class="item">
                 Modififaction Time:{activeListItem.modify}
               </class>
