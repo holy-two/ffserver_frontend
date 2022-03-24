@@ -89,10 +89,14 @@ export async function ls<D extends LsResult[] = LsResult[]>(path: string) {
   }
 }
 
-export async function rm_f<D extends LsResult[] = LsResult[]>(path: string) {
+export async function rm_f<D extends LsResult[] = LsResult[]>(path: string, name?: string) {
   try {
-    const res = await del<D>('file', path)
-    return res
+    if (confirm(`You want to delete file ${name ? name : path}?`)) {
+      await del<D>('file', path)
+      return true
+    } else {
+      return false
+    }
   } catch (e) {
     throw new Error(err('rm -f', e))
   }

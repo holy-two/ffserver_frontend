@@ -111,6 +111,7 @@
     height: 40px;
     align-items: center;
     user-select: none;
+    background-color: #fff;
     & > .steps {
       display: flex;
       align-items: center;

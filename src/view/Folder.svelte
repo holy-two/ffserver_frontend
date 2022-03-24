@@ -22,7 +22,7 @@
 </script>
 
 <script lang="ts">
-  import { download, ls, mkdir, upload } from "../api/cmd";
+  import { download, ls, mkdir, rm_f, upload } from "../api/cmd";
   import dayjs from "dayjs";
 
   import Layout from "../layout/index.svelte";
@@ -34,11 +34,15 @@
     PURE_FILE_TYPE,
   } from "../data/fileTypeMap";
   import { push, pop } from "svelte-spa-router";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import type { EventKeys as LayoutEvents } from "../layout/index.svelte";
   import promiseCatch from "../util/promiseCatch";
   import ContentMenu from "../components/ContentMenu.svelte";
   import ContentMenuItem from "../components/ContentMenuItem.svelte";
+  import { PURE_KEY_TYPE } from "../data/keybroadMap";
+  import handleCustomRespose from "../util/handleCustomRespose";
+  import ContentMenuGroup from "../components/ContentMenuGroup.svelte";
+  import unImplWarm from "../util/unImplWarm";
   export let params = { wild: "" };
 
   const fmtTime = (dt: Date | string | number) =>
@@ -131,38 +135,51 @@
       const [res, err] = await promiseCatch<boolean, any>(
         mkdir(getCurretPath())
       );
-      if (!err && res) {
-        refreshLs();
-      } else if (!res) {
-        return;
-      } else {
-        alert(err);
-      }
+      handleCustomRespose(res, err, refreshLs);
     } else if (type === "upload") {
       const [res, err] = await promiseCatch<boolean, any>(
         upload(getCurretPath())
       );
-      if (!err && res) {
-        refreshLs();
-      } else if (!res) {
-        return;
-      } else {
-        alert(err);
-      }
+      handleCustomRespose(res, err, refreshLs);
     }
   };
 
   const windowHashChangeHandle = async () => {
     refreshLs();
   };
+
+  const delFile = async () => {
+    if (activeListItem.type === "file") {
+      const [res, err] = await promiseCatch(
+        rm_f(getCurretPath() + "/" + activeListItem.name, activeListItem.name)
+      );
+      handleCustomRespose(res, err, refreshLs);
+    }
+  };
+  const handleDelKeyup = async (e: KeyboardEvent) => {
+    if (e.shiftKey && e.key === PURE_KEY_TYPE.Delete && activeListItem) {
+      delFile();
+    }
+  };
+
+  let fileContentMenuShow = false;
+  let fileContentMenuX = 0;
+  let fileContentMenuY = 0;
+  const handleFileContentMenu = async () => {
+    fileContentMenuShow = true;
+  };
 </script>
 
 <svelte:window on:hashchange={windowHashChangeHandle} />
 <svelte:body
+  on:keyup={handleDelKeyup}
   on:blur={mouseupFileInfoHandle}
   on:mouseup={mouseupFileInfoHandle}
   on:mousemove={resizeFileInfoHandle}
-  on:contextmenu|preventDefault />
+  on:contextmenu|preventDefault={(e) => {
+    fileContentMenuX = e.clientX;
+    fileContentMenuY = e.clientY;
+  }} />
 
 <Layout
   {pathSteps}
@@ -179,8 +196,19 @@
     draggable={false}
   >
     <div class="content">
-      <div class="file-list">
-        <table on:click|stopPropagation>
+      <div
+        class="file-list"
+        on:contextmenu={() => {
+          fileContentMenuShow = false;
+          activeListItem = null;
+        }}
+      >
+        <table
+          on:click|stopPropagation={() => {
+            fileContentMenuShow = false;
+          }}
+          on:contextmenu|stopPropagation|preventDefault
+        >
           <thead>
             <tr>
               <th>Name</th>
@@ -218,11 +246,17 @@
                       download(item.download, item.name);
                     }
                   }}
-                  on:contextmenu={() => {
+                  on:contextmenu={(e) => {
+                    activeListItem = item;
+                    fileContentMenuX = e.clientX;
+                    fileContentMenuY = e.clientY;
+                  }}
+                  on:contextmenu={handleFileContentMenu}
+                  on:dblclick={() => download(item.download, item.name)}
+                  on:click|stopPropagation={() => {
+                    fileContentMenuShow = false;
                     activeListItem = item;
                   }}
-                  on:dblclick={() => download(item.download, item.name)}
-                  on:click|stopPropagation={() => (activeListItem = item)}
                 >
                   <td>
                     <i
@@ -323,12 +357,48 @@
 </Layout>
 
 <div class="contentmenus">
-  <!-- <ContentMenu >
-    <ContentMenuItem >
-      粘贴
-      <i slot="icon" class="iconfont icon"></i>
-    </ContentMenuItem>
-  </ContentMenu> -->
+  <ContentMenu
+    bind:show={fileContentMenuShow}
+    bind:x={fileContentMenuX}
+    bind:y={fileContentMenuY}
+  >
+    <ContentMenuGroup>
+      <ContentMenuItem
+        on:click={unImplWarm}
+        on:click={() => (fileContentMenuShow = false)}>Cut</ContentMenuItem
+      >
+    </ContentMenuGroup>
+    <ContentMenuGroup>
+      <ContentMenuItem
+        on:click={unImplWarm}
+        on:click={() => (fileContentMenuShow = false)}>Rename</ContentMenuItem
+      >
+      <ContentMenuItem
+        on:click={() => (fileContentMenuShow = false)}
+        on:click={delFile}>Delete</ContentMenuItem
+      >
+    </ContentMenuGroup>
+    <ContentMenuGroup>
+      <ContentMenuItem
+        on:click={() => {
+          if (activeListItem && activeListItem.type === "file") {
+            download(activeListItem.download, activeListItem.name);
+          }
+        }}
+        on:click={() => (fileContentMenuShow = false)}
+      >
+        <i slot="icon" class="iconfont icon-download" style="color:#067fdb" />
+        Download
+      </ContentMenuItem>
+      <ContentMenuItem
+        on:click={unImplWarm}
+        on:click={() => (fileContentMenuShow = false)}
+      >
+        <i slot="icon" class="iconfont icon-qrcode" style="color:#333" />
+        Create Download QRCode
+      </ContentMenuItem>
+    </ContentMenuGroup>
+  </ContentMenu>
 </div>
 
 <style lang="scss">
@@ -343,14 +413,19 @@
       display: flex;
       .file-list {
         flex: 1;
-        overflow: hidden;
-        min-width: 820px;
+        overflow: auto;
         height: 100%;
         table {
           width: 100%;
+          min-width: 820px;
           border: none;
           border-collapse: unset;
           border-spacing: 0;
+          thead {
+            position: sticky;
+            top: 0;
+            background-color: #fff;
+          }
           th {
             font-size: 12px;
             font-weight: normal;
