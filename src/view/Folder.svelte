@@ -10,7 +10,7 @@
   }
   interface FileItem extends IItem {
     type: "file";
-    fileType: string;
+    fileType: PURE_FILE_TYPE;
     size: string;
     download: string;
   }
@@ -31,12 +31,14 @@
     fileicon_map,
     filename_map,
     defaultIcon,
+    PURE_FILE_TYPE,
   } from "../data/fileTypeMap";
   import { push, pop } from "svelte-spa-router";
   import { onMount } from "svelte";
   import type { EventKeys as LayoutEvents } from "../layout/index.svelte";
   import promiseCatch from "../util/promiseCatch";
   import ContentMenu from "../components/ContentMenu.svelte";
+  import ContentMenuItem from "../components/ContentMenuItem.svelte";
   export let params = { wild: "" };
 
   const fmtTime = (dt: Date | string | number) =>
@@ -264,7 +266,7 @@
           </div>
           <div class="type" style={`width:${fileInfoWidth - 40}px`}>
             {#if activeListItem && activeListItem.type === "file"}
-              {activeListItem.fileType} File
+              {PURE_FILE_TYPE[activeListItem.fileType]} File
             {/if}
           </div>
           <div class="icon" style={`width:${fileInfoWidth - 40}px`}>
@@ -321,7 +323,12 @@
 </Layout>
 
 <div class="contentmenus">
-  <ContentMenu />
+  <!-- <ContentMenu >
+    <ContentMenuItem >
+      粘贴
+      <i slot="icon" class="iconfont icon"></i>
+    </ContentMenuItem>
+  </ContentMenu> -->
 </div>
 
 <style lang="scss">

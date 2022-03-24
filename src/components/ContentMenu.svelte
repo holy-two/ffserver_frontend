@@ -6,10 +6,12 @@
   };
 
   const mousemoveHandle = (e: MouseEvent) => {
-    position = {
-      x: e.clientX,
-      y: e.clientY,
-    };
+    if (!show) {
+      position = {
+        x: e.clientX,
+        y: e.clientY,
+      };
+    }
   };
 </script>
 
@@ -27,5 +29,10 @@
 <style lang="scss">
   .menu {
     position: fixed;
+    width: 262px;
+    height: 300px;
+    background-color: rgb(241, 241, 241);
+    box-shadow: #aaa 3px 3px 4px;
+    border: #aaa solid 1px;
   }
 </style>
