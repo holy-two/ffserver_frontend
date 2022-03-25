@@ -34,7 +34,7 @@
     PURE_FILE_TYPE,
   } from "../data/fileTypeMap";
   import { push, pop } from "svelte-spa-router";
-  import { onMount, tick } from "svelte";
+  import { onMount } from "svelte";
   import type { EventKeys as LayoutEvents } from "../layout/index.svelte";
   import promiseCatch from "../util/promiseCatch";
   import ContentMenu from "../components/ContentMenu.svelte";
@@ -43,10 +43,11 @@
   import handleCustomRespose from "../util/handleCustomRespose";
   import ContentMenuGroup from "../components/ContentMenuGroup.svelte";
   import unImplWarm from "../util/unImplWarm";
+  import useMenuState, { hideAll } from "../hooks/useMenuState";
   export let params = { wild: "" };
 
   const fmtTime = (dt: Date | string | number) =>
-    dayjs(dt).format("YYYY/MM/DD hh:mm:ss");
+    dayjs(dt).format("YYYY/MM/DD HH:mm");
 
   $: pathSteps = params.wild.split("/").filter((p) => !!p);
   let fileInfoWidth = 278;
@@ -156,30 +157,25 @@
       handleCustomRespose(res, err, refreshLs);
     }
   };
+  const delFolder = async () => {};
   const handleDelKeyup = async (e: KeyboardEvent) => {
     if (e.shiftKey && e.key === PURE_KEY_TYPE.Delete && activeListItem) {
       delFile();
     }
   };
 
-  let fileContentMenuShow = false;
-  let fileContentMenuX = 0;
-  let fileContentMenuY = 0;
-  const handleFileContentMenu = async () => {
-    fileContentMenuShow = true;
-  };
+  const [fileMenuX, fileMenuY, fileMenuShow] = useMenuState("file");
+  const [folderMenuX, folderMenuY, folderMenuShow] = useMenuState("folder");
+  const [systemMenuX, systemMenuY, systemMenuShow] = useMenuState("system");
 </script>
 
 <svelte:window on:hashchange={windowHashChangeHandle} />
 <svelte:body
+  on:contextmenu|preventDefault
   on:keyup={handleDelKeyup}
   on:blur={mouseupFileInfoHandle}
   on:mouseup={mouseupFileInfoHandle}
-  on:mousemove={resizeFileInfoHandle}
-  on:contextmenu|preventDefault={(e) => {
-    fileContentMenuX = e.clientX;
-    fileContentMenuY = e.clientY;
-  }} />
+  on:mousemove={resizeFileInfoHandle} />
 
 <Layout
   {pathSteps}
@@ -190,25 +186,28 @@
 >
   <div
     class="container"
-    on:click={() => (activeListItem = undefined)}
     on:blur={mouseupFileInfoHandle}
     on:mouseup={mouseupFileInfoHandle}
     draggable={false}
   >
-    <div class="content">
+    <div
+      class="content"
+      on:contextmenu|preventDefault={() => {
+        hideAll();
+      }}
+    >
       <div
         class="file-list"
-        on:contextmenu={() => {
-          fileContentMenuShow = false;
+        on:click={() => {
+          hideAll();
           activeListItem = null;
         }}
+        on:contextmenu={() => {
+          activeListItem = null;
+          $systemMenuShow = true;
+        }}
       >
-        <table
-          on:click|stopPropagation={() => {
-            fileContentMenuShow = false;
-          }}
-          on:contextmenu|stopPropagation|preventDefault
-        >
+        <table on:contextmenu|stopPropagation|preventDefault>
           <thead>
             <tr>
               <th>Name</th>
@@ -227,8 +226,20 @@
                       folderDbClick(item);
                     }
                   }}
+                  on:contextmenu={(e) => {
+                    activeListItem = item;
+                    $folderMenuX = e.clientX;
+                    $folderMenuY = e.clientY;
+                  }}
+                  on:contextmenu={() => {
+                    hideAll();
+                    $folderMenuShow = true;
+                  }}
+                  on:click|stopPropagation={() => {
+                    activeListItem = item;
+                    hideAll();
+                  }}
                   on:dblclick={() => folderDbClick(item)}
-                  on:click={() => (activeListItem = item)}
                 >
                   <td>
                     <i class="iconfont icon-folder-fill" />
@@ -248,15 +259,18 @@
                   }}
                   on:contextmenu={(e) => {
                     activeListItem = item;
-                    fileContentMenuX = e.clientX;
-                    fileContentMenuY = e.clientY;
+                    $fileMenuX = e.clientX;
+                    $fileMenuY = e.clientY;
                   }}
-                  on:contextmenu={handleFileContentMenu}
-                  on:dblclick={() => download(item.download, item.name)}
+                  on:contextmenu={() => {
+                    hideAll();
+                    $fileMenuShow = true;
+                  }}
                   on:click|stopPropagation={() => {
-                    fileContentMenuShow = false;
                     activeListItem = item;
+                    hideAll();
                   }}
+                  on:dblclick={() => download(item.download, item.name)}
                 >
                   <td>
                     <i
@@ -357,24 +371,20 @@
 </Layout>
 
 <div class="contentmenus">
-  <ContentMenu
-    bind:show={fileContentMenuShow}
-    bind:x={fileContentMenuX}
-    bind:y={fileContentMenuY}
-  >
+  <ContentMenu bind:show={$fileMenuShow} x={$fileMenuX} y={$fileMenuY}>
     <ContentMenuGroup>
       <ContentMenuItem
         on:click={unImplWarm}
-        on:click={() => (fileContentMenuShow = false)}>Cut</ContentMenuItem
+        on:click={() => ($fileMenuShow = false)}>Cut</ContentMenuItem
       >
     </ContentMenuGroup>
     <ContentMenuGroup>
       <ContentMenuItem
         on:click={unImplWarm}
-        on:click={() => (fileContentMenuShow = false)}>Rename</ContentMenuItem
+        on:click={() => ($fileMenuShow = false)}>Rename</ContentMenuItem
       >
       <ContentMenuItem
-        on:click={() => (fileContentMenuShow = false)}
+        on:click={() => ($fileMenuShow = false)}
         on:click={delFile}>Delete</ContentMenuItem
       >
     </ContentMenuGroup>
@@ -385,17 +395,44 @@
             download(activeListItem.download, activeListItem.name);
           }
         }}
-        on:click={() => (fileContentMenuShow = false)}
+        on:click={() => ($fileMenuShow = false)}
       >
         <i slot="icon" class="iconfont icon-download" style="color:#067fdb" />
         Download
       </ContentMenuItem>
       <ContentMenuItem
         on:click={unImplWarm}
-        on:click={() => (fileContentMenuShow = false)}
+        on:click={() => ($fileMenuShow = false)}
       >
         <i slot="icon" class="iconfont icon-qrcode" style="color:#333" />
         Create Download QRCode
+      </ContentMenuItem>
+    </ContentMenuGroup>
+  </ContentMenu>
+  <ContentMenu x={$folderMenuX} y={$folderMenuY} bind:show={$folderMenuShow}>
+    <ContentMenuGroup>
+      <ContentMenuItem
+        on:click={unImplWarm}
+        on:click={() => ($folderMenuShow = false)}>Cut</ContentMenuItem
+      >
+    </ContentMenuGroup>
+    <ContentMenuGroup>
+      <ContentMenuItem
+        on:click={unImplWarm}
+        on:click={() => ($folderMenuShow = false)}>Rename</ContentMenuItem
+      >
+      <ContentMenuItem
+        on:click={() => ($folderMenuShow = false)}
+        on:click={delFolder}>Delete</ContentMenuItem
+      >
+    </ContentMenuGroup>
+    <ContentMenuGroup>
+      <ContentMenuItem
+        on:click={unImplWarm}
+        on:click={() => ($folderMenuShow = false)}
+      >
+        <i slot="icon" class="iconfont icon-qrcode" style="color:#333" />
+        Create Share QRCode
       </ContentMenuItem>
     </ContentMenuGroup>
   </ContentMenu>

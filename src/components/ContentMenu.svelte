@@ -4,12 +4,6 @@
   export let x = 0;
   export let y = 0;
 
-  const mousemoveHandle = (e: MouseEvent) => {
-    if (!show) {
-      x = e.clientX;
-      y = e.clientY;
-    }
-  };
   let menuThis: HTMLDivElement;
   $: offsetX = x > window.innerWidth - 262 - 10 ? x - 262 - 10 : x;
   $: offsetY =
@@ -18,7 +12,7 @@
       : y;
 </script>
 
-<svelte:body on:click={() => (show = false)} on:mousemove={mousemoveHandle} />
+<svelte:body on:click={() => (show = false)} />
 {#if show}
   <div
     class="menu"

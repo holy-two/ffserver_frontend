@@ -1,7 +1,7 @@
 <script context="module" lang="ts">
   export const tabs = ["File"];
 
-  type Tab = "File" | "View" | (string & {});
+  export type Tab = "File" | "View" | (string & {});
 
   interface FileMenuItem {
     text: string;
@@ -32,31 +32,24 @@
 </script>
 
 <script lang="ts">
-  import ToolPanelGroup from "../components/ToolPanelGroup.svelte";
   import { fade } from "svelte/transition";
-  import ToolPanelSelect from "../components/ToolPanelSelect.svelte";
-  import type { IMenu } from "../components/ToolPanelSelect.svelte";
   import PathNavbar from "../components/PathNavbar.svelte";
   import { createEventDispatcher, tick } from "svelte";
+  import useMenuState, { hideAll } from "../hooks/useMenuState";
 
   export let pathSteps: string[] = [];
   export let pathNavLoading: boolean = false;
 
-  let activeTab: Tab = "";
-
-  let orderList: IMenu = {
-    value: "name",
-    list: ["name", "modify", "type", "size"],
-  };
-
-  const hiddenToolEject = () => {
-    activeTab = "";
-  };
+  // let orderList: IMenu = {
+  //   value: "name",
+  //   list: ["name", "modify", "type", "size"],
+  // };
 
   const dispatch = createEventDispatcher<EventKeys>();
+  const tabShowConst = "__layout$tab-";
+  const [, , fileTabShow] = useMenuState(tabShowConst + "File");
 </script>
 
-<svelte:body on:click={hiddenToolEject} />
 <div class="layout">
   <div class="header">
     <i class="iconfont icon-folder-fill header-icon" />
@@ -65,25 +58,23 @@
   </div>
   <div class="tools">
     <div class="tabs">
-      {#each tabs as tab, i}
-        <div
-          class="tab"
-          class:extra={i === 0}
-          class:active={activeTab === tab}
-          on:click|stopPropagation={() => {
-            if (activeTab === tab) {
-              activeTab = "";
-            } else {
-              activeTab = tab;
-            }
-          }}
-        >
-          {tab}
-        </div>
-      {/each}
+      <div
+        class="tab extra"
+        class:active={$fileTabShow}
+        on:click|stopPropagation={() => {
+          if ($fileTabShow) {
+            hideAll();
+          } else {
+            hideAll();
+            $fileTabShow = true;
+          }
+        }}
+      >
+        File
+      </div>
     </div>
     <div class="eject" on:click|stopPropagation>
-      {#if activeTab === "File"}
+      {#if $fileTabShow}
         <div class="menu" out:fade={{ duration: 200 }}>
           <div class="menu-wrapper">
             {#each fileMenu as menu}
@@ -92,7 +83,7 @@
                 on:click={() => {
                   dispatch("FileMenuClick", { type: menu.type });
                   tick().then(() => {
-                    activeTab = "";
+                    $fileTabShow = false;
                   });
                 }}
               >
@@ -102,7 +93,7 @@
             {/each}
           </div>
         </div>
-      {:else if activeTab === "View"}
+        <!-- {:else if activeTab === "View"}
         <div class="panel" out:fade={{ duration: 200 }}>
           <ToolPanelGroup title="Current view">
             <ToolPanelSelect
@@ -114,7 +105,7 @@
           </ToolPanelGroup>
         </div>
       {:else}
-        <div class="empty" />
+        <div class="empty" /> -->
       {/if}
     </div>
   </div>
