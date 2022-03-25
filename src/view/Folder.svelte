@@ -22,7 +22,7 @@
 </script>
 
 <script lang="ts">
-  import { download, ls, mkdir, rm_f, upload } from "../api/cmd";
+  import { download, ls, mkdir, rm_f, rm_rf, upload } from "../api/cmd";
   import dayjs from "dayjs";
 
   import Layout from "../layout/index.svelte";
@@ -161,7 +161,14 @@
       handleCustomRespose(res, err, refreshLs);
     }
   };
-  const delFolder = async () => {};
+  const delFolder = async () => {
+    if (activeListItem.type === "folder") {
+      const [res, err] = await promiseCatch(
+        rm_rf(getCurretPath() + "/" + activeListItem.name, activeListItem.name)
+      );
+      handleCustomRespose(res, err, refreshLs);
+    }
+  };
   const handleDelKeyup = async (e: KeyboardEvent) => {
     if (e.shiftKey && e.key === PURE_KEY_TYPE.Delete && activeListItem) {
       delFile();
