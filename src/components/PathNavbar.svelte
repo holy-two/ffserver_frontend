@@ -16,6 +16,7 @@
   import { push, pop } from "svelte-spa-router";
   export let pathSteps: string[] = [];
   export let loading: boolean = false;
+  export let showTools: boolean = true;
   let navActive = false;
   let navString = "";
   let parseSteps: ParseStep[] = [];
@@ -92,9 +93,11 @@
       </div>
     {/if}
   </div>
-  <div class="refresh" on:click={() => dispatch("refresh")}>
-    <i class="iconfont icon-refresh" />
-  </div>
+  {#if showTools}
+    <div class="refresh" on:click={() => dispatch("refresh")}>
+      <i class="iconfont icon-refresh" />
+    </div>
+  {/if}
 </div>
 
 <style lang="scss">

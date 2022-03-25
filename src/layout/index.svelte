@@ -39,6 +39,7 @@
 
   export let pathSteps: string[] = [];
   export let pathNavLoading: boolean = false;
+  export let showNavRefresh: boolean = true;
 
   // let orderList: IMenu = {
   //   value: "name",
@@ -57,22 +58,24 @@
     FFServer
   </div>
   <div class="tools">
-    <div class="tabs">
-      <div
-        class="tab extra"
-        class:active={$fileTabShow}
-        on:click|stopPropagation={() => {
-          if ($fileTabShow) {
-            hideAll();
-          } else {
-            hideAll();
-            $fileTabShow = true;
-          }
-        }}
-      >
-        File
+    <slot name="tabs">
+      <div class="tabs">
+        <div
+          class="tab extra"
+          class:active={$fileTabShow}
+          on:click|stopPropagation={() => {
+            if ($fileTabShow) {
+              hideAll();
+            } else {
+              hideAll();
+              $fileTabShow = true;
+            }
+          }}
+        >
+          File
+        </div>
       </div>
-    </div>
+    </slot>
     <div class="eject" on:click|stopPropagation>
       {#if $fileTabShow}
         <div class="menu" out:fade={{ duration: 200 }}>
@@ -114,6 +117,7 @@
     on:refresh
     on:changeNav
     bind:loading={pathNavLoading}
+    showTools={showNavRefresh}
   />
   <div class="slot-wrapper">
     <slot />
