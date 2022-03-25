@@ -71,6 +71,17 @@ export async function del<D>(cmd: string, path: string) {
   return await handleResp<D>(res)
 }
 
+export async function put<D>(cmd: string, path: string, data: Record<string, any>) {
+  const fd = new FormData()
+  for (const key in data) {
+    fd.append(key, data[key])
+  }
+  const res = await fetch(joinCmd(cmd) + '/' + path, {
+    method: 'PUT',
+    body: fd,
+  })
+  return await handleResp<D>(res)
+}
 export interface LsResult {
   ctime: string
   mime: string
@@ -132,7 +143,7 @@ export async function mkdir(path: string) {
     await post('folder', path, {
       dirname: folder
     })
-    return true as const
+    return true
   } catch (e) {
     throw new Error(err('mkdir', e))
   }
@@ -164,4 +175,19 @@ export function upload(path: string) {
     })
     input.click()
   })
+}
+
+export async function rename(path: string, name: string, type: 'file' | 'folder' = 'file') {
+  const new_name = prompt(`replace ${type} name`, name)
+  if (!name) {
+    return false
+  }
+  try {
+    await put(type, path, {
+      new_path: path.replace(name, new_name)
+    })
+    return true
+  } catch (e) {
+    throw new Error(err('rename', e))
+  }
 }

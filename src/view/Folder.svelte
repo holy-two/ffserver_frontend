@@ -22,7 +22,7 @@
 </script>
 
 <script lang="ts">
-  import { download, ls, mkdir, rm_f, rm_rf, upload } from "../api/cmd";
+  import { download, ls, mkdir, rename, rm_f, rm_rf, upload } from "../api/cmd";
   import dayjs from "dayjs";
 
   import Layout from "../layout/index.svelte";
@@ -172,6 +172,19 @@
   const handleDelKeyup = async (e: KeyboardEvent) => {
     if (e.shiftKey && e.key === PURE_KEY_TYPE.Delete && activeListItem) {
       delFile();
+    }
+  };
+
+  const renameHandle = async () => {
+    if (activeListItem) {
+      const [res, err] = await promiseCatch(
+        rename(
+          getCurretPath() + "/" + activeListItem.name,
+          activeListItem.name,
+          activeListItem.type
+        )
+      );
+      handleCustomRespose(res, err, refreshLs);
     }
   };
 
@@ -390,7 +403,7 @@
     </ContentMenuGroup>
     <ContentMenuGroup>
       <ContentMenuItem
-        on:click={unImplWarm}
+        on:click={renameHandle}
         on:click={() => ($fileMenuShow = false)}>Rename</ContentMenuItem
       >
       <ContentMenuItem
@@ -428,7 +441,7 @@
     </ContentMenuGroup>
     <ContentMenuGroup>
       <ContentMenuItem
-        on:click={unImplWarm}
+        on:click={renameHandle}
         on:click={() => ($folderMenuShow = false)}>Rename</ContentMenuItem
       >
       <ContentMenuItem
