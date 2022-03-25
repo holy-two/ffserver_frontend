@@ -179,8 +179,11 @@ export function upload(path: string) {
 
 export async function rename(path: string, name: string, type: 'file' | 'folder' = 'file') {
   const new_name = prompt(`replace ${type} name`, name)
-  if (!name) {
-    return false
+  if (!new_name) {
+    throw new Error(err('rename', 'new name connot be empty'))
+  }
+  if (name === new_name) {
+    return true
   }
   try {
     await put(type, path, {
@@ -189,5 +192,20 @@ export async function rename(path: string, name: string, type: 'file' | 'folder'
     return true
   } catch (e) {
     throw new Error(err('rename', e))
+  }
+}
+
+export async function move(from: string, to: string, type: 'file' | 'folder' = 'file') {
+  if (confirm(`you want to move ${type} ${from} to ${to}`)) {
+    try {
+      await put(type, from, {
+        new_path: to
+      })
+      return true
+    } catch (e) {
+      throw new Error(err('rename', e))
+    }
+  } else {
+    return false
   }
 }

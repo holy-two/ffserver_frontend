@@ -7,16 +7,36 @@
     text: string;
     type: FileMenuType;
     icon: string;
+    disabled?: boolean;
   }
 
-  export type FileMenuType = "upload" | "mkdir";
+  export type FileMenuType = "upload" | "mkdir" | "paste";
 
   export interface EventKeys {
     FileMenuClick: {
       type: FileMenuType;
     };
   }
+</script>
 
+<script lang="ts">
+  import { fade } from "svelte/transition";
+  import PathNavbar from "../components/PathNavbar.svelte";
+  import { createEventDispatcher, tick } from "svelte";
+  import useMenuState, { hideAll } from "../hooks/useMenuState";
+  import { cutItem } from "../store";
+
+  export let pathSteps: string[] = [];
+  export let pathNavLoading: boolean = false;
+  export let showNavRefresh: boolean = true;
+  export let navRootPath: string = null;
+  export let navRootIcon: string = null;
+  export let navRootSimpleIcon: string = null;
+  export let navRootIconColor: string = null;
+  export let navRootSimpleIconColor: string = null;
+  const dispatch = createEventDispatcher<EventKeys>();
+  const tabShowConst = "__layout$tab-";
+  const [, , fileTabShow] = useMenuState(tabShowConst + "File");
   const fileMenu: FileMenuItem[] = [
     {
       text: "Upload File",
@@ -28,32 +48,15 @@
       type: "mkdir",
       icon: "new-folder",
     },
+    {
+      text: "Paste Item",
+      type: "paste",
+      icon: "paste",
+      get disabled() {
+        return $cutItem === null;
+      },
+    },
   ];
-</script>
-
-<script lang="ts">
-  import { fade } from "svelte/transition";
-  import PathNavbar from "../components/PathNavbar.svelte";
-  import { createEventDispatcher, tick } from "svelte";
-  import useMenuState, { hideAll } from "../hooks/useMenuState";
-
-  export let pathSteps: string[] = [];
-  export let pathNavLoading: boolean = false;
-  export let showNavRefresh: boolean = true;
-  export let navRootPath: string = null;
-  export let navRootIcon: string = null;
-  export let navRootSimpleIcon: string = null;
-  export let navRootIconColor: string = null;
-  export let navRootSimpleIconColor: string = null;
-
-  // let orderList: IMenu = {
-  //   value: "name",
-  //   list: ["name", "modify", "type", "size"],
-  // };
-
-  const dispatch = createEventDispatcher<EventKeys>();
-  const tabShowConst = "__layout$tab-";
-  const [, , fileTabShow] = useMenuState(tabShowConst + "File");
 </script>
 
 <div class="layout">
@@ -88,11 +91,14 @@
             {#each fileMenu as menu}
               <div
                 class="menu-item"
+                class:disabled={menu.disabled}
                 on:click={() => {
-                  dispatch("FileMenuClick", { type: menu.type });
-                  tick().then(() => {
-                    $fileTabShow = false;
-                  });
+                  if (!menu.disabled) {
+                    dispatch("FileMenuClick", { type: menu.type });
+                    tick().then(() => {
+                      $fileTabShow = false;
+                    });
+                  }
                 }}
               >
                 <i class="iconfont icon-{menu.icon}" />
@@ -256,9 +262,15 @@
             align-items: center;
             box-sizing: border-box;
             border: transparent solid 1px;
-            &:hover {
-              background-color: rgb(237, 244, 252);
-              border-color: rgb(168, 210, 253);
+
+            &.disabled {
+              color: #999;
+            }
+            &:not(.disabled) {
+              &:hover {
+                background-color: rgb(237, 244, 252);
+                border-color: rgb(168, 210, 253);
+              }
             }
             .iconfont {
               font-size: 30px;
@@ -268,6 +280,9 @@
               }
               &.icon-new-folder {
                 color: #f0d05f;
+              }
+              &.icon-paste {
+                color: rgb(134, 152, 181);
               }
             }
           }

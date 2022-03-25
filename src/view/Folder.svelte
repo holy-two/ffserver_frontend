@@ -6,7 +6,16 @@
 </script>
 
 <script lang="ts">
-  import { download, ls, mkdir, rename, rm_f, rm_rf, upload } from "../api/cmd";
+  import {
+    download,
+    ls,
+    mkdir,
+    move,
+    rename,
+    rm_f,
+    rm_rf,
+    upload,
+  } from "../api/cmd";
   import dayjs from "dayjs";
 
   import Layout from "../layout/index.svelte";
@@ -28,6 +37,8 @@
   import ContentMenuGroup from "../components/ContentMenuGroup.svelte";
   import unImplWarm from "../util/unImplWarm";
   import useMenuState, { hideAll } from "../hooks/useMenuState";
+  import { cutItem } from "../store";
+  import parseMorePath from "../util/parseMorePath";
   export let params = { wild: "" };
 
   const fmtTime = (dt: Date | string | number) =>
@@ -130,6 +141,21 @@
         upload(getCurretPath())
       );
       handleCustomRespose(res, err, refreshLs);
+    } else if (type === "paste") {
+      if ($cutItem.fromPath === getCurretPath()) {
+        $cutItem = null;
+        refreshLs();
+        return;
+      }
+      const from = parseMorePath(
+        $cutItem.fromPath + "/" + $cutItem.itemValue.name
+      );
+      const to = parseMorePath(getCurretPath() + "/" + $cutItem.itemValue.name);
+      const [res, err] = await promiseCatch(
+        move(from, to, $cutItem.itemValue.type)
+      );
+      $cutItem = null;
+      handleCustomRespose(res, err, refreshLs);
     }
   };
 
@@ -140,16 +166,24 @@
   const delFile = async () => {
     if (activeListItem.type === "file") {
       const [res, err] = await promiseCatch(
-        rm_f(getCurretPath() + "/" + activeListItem.name, activeListItem.name)
+        rm_f(
+          parseMorePath(getCurretPath() + "/" + activeListItem.name),
+          activeListItem.name
+        )
       );
+      $cutItem = null;
       handleCustomRespose(res, err, refreshLs);
     }
   };
   const delFolder = async () => {
     if (activeListItem.type === "folder") {
       const [res, err] = await promiseCatch(
-        rm_rf(getCurretPath() + "/" + activeListItem.name, activeListItem.name)
+        rm_rf(
+          parseMorePath(getCurretPath() + "/" + activeListItem.name),
+          activeListItem.name
+        )
       );
+      $cutItem = null;
       handleCustomRespose(res, err, refreshLs);
     }
   };
@@ -163,12 +197,23 @@
     if (activeListItem) {
       const [res, err] = await promiseCatch(
         rename(
-          getCurretPath() + "/" + activeListItem.name,
+          parseMorePath(getCurretPath() + "/" + activeListItem.name),
           activeListItem.name,
           activeListItem.type
         )
       );
       handleCustomRespose(res, err, refreshLs);
+    }
+  };
+  const itemCut = () =>
+    activeListItem &&
+    cutItem.set({
+      fromPath: getCurretPath(),
+      itemValue: activeListItem,
+    });
+  const mouseupCutHandle = (e: KeyboardEvent) => {
+    if (e.ctrlKey && e.key === PURE_KEY_TYPE.X) {
+      itemCut();
     }
   };
 
@@ -180,14 +225,18 @@
 <svelte:window on:hashchange={windowHashChangeHandle} />
 <svelte:body
   on:contextmenu|preventDefault
-  on:keyup={handleDelKeyup}
+  on:keyup|preventDefault={handleDelKeyup}
+  on:keyup|preventDefault={mouseupCutHandle}
   on:blur={mouseupFileInfoHandle}
   on:mouseup={mouseupFileInfoHandle}
   on:mousemove={resizeFileInfoHandle} />
 
 <Layout
   {pathSteps}
-  on:refresh={refreshLs}
+  on:refresh={() => {
+    $cutItem = null;
+    refreshLs();
+  }}
   on:changeNav={refreshLs}
   on:FileMenuClick={fileMenuClickHandle}
   bind:pathNavLoading={refreshLoading}
@@ -228,6 +277,8 @@
             {#each folderList as item}
               <tr
                 class:active={activeListItem === item}
+                class:cutting={getCurretPath() === $cutItem?.fromPath &&
+                  item.name === $cutItem?.itemValue.name}
                 on:touchend={() => {
                   if (activeListItem === item) {
                     folderDbClick(item);
@@ -260,6 +311,8 @@
             {#each fileList as item}
               <tr
                 class:active={activeListItem === item}
+                class:cutting={getCurretPath() === $cutItem?.fromPath &&
+                  item.name === $cutItem?.itemValue.name}
                 on:touchend={() => {
                   if (activeListItem === item) {
                     download(item.download, item.name);
@@ -381,7 +434,7 @@
   <ContentMenu bind:show={$fileMenuShow} x={$fileMenuX} y={$fileMenuY}>
     <ContentMenuGroup>
       <ContentMenuItem
-        on:click={unImplWarm}
+        on:click={itemCut}
         on:click={() => ($fileMenuShow = false)}>Cut</ContentMenuItem
       >
     </ContentMenuGroup>
@@ -419,7 +472,7 @@
   <ContentMenu x={$folderMenuX} y={$folderMenuY} bind:show={$folderMenuShow}>
     <ContentMenuGroup>
       <ContentMenuItem
-        on:click={unImplWarm}
+        on:click={itemCut}
         on:click={() => ($folderMenuShow = false)}>Cut</ContentMenuItem
       >
     </ContentMenuGroup>
@@ -504,6 +557,11 @@
               transition: all 0.2s ease-out;
               &.active {
                 background-color: rgb(204, 232, 255);
+              }
+              &.cutting {
+                .iconfont {
+                  opacity: 0.5;
+                }
               }
 
               &:not(.active) {
