@@ -40,6 +40,11 @@
   export let pathSteps: string[] = [];
   export let pathNavLoading: boolean = false;
   export let showNavRefresh: boolean = true;
+  export let navRootPath: string = null;
+  export let navRootIcon: string = null;
+  export let navRootSimpleIcon: string = null;
+  export let navRootIconColor: string = null;
+  export let navRootSimpleIconColor: string = null;
 
   // let orderList: IMenu = {
   //   value: "name",
@@ -118,6 +123,11 @@
     on:changeNav
     bind:loading={pathNavLoading}
     showTools={showNavRefresh}
+    rootIcon={navRootIcon}
+    rootPath={navRootPath}
+    rootSimpleIcon={navRootSimpleIcon}
+    rootIconColor={navRootIconColor}
+    rootSimpleIconColor={navRootSimpleIconColor}
   />
   <div class="slot-wrapper">
     <slot />

@@ -13,10 +13,15 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
 
-  import { push, pop } from "svelte-spa-router";
+  import { push, pop, link } from "svelte-spa-router";
   export let pathSteps: string[] = [];
   export let loading: boolean = false;
   export let showTools: boolean = true;
+  export let rootPath: string = null;
+  export let rootIcon: string = null;
+  export let rootSimpleIcon: string = null;
+  export let rootIconColor: string = null;
+  export let rootSimpleIconColor: string = null;
   let navActive = false;
   let navString = "";
   let parseSteps: ParseStep[] = [];
@@ -26,7 +31,7 @@
       if (i === 0) {
         result[i] = {
           path: pathSteps[i],
-          href: `/folder/${pathSteps[i]}`,
+          href: `/${rootPath ?? "folder"}/${pathSteps[i]}`,
         };
       } else {
         result[i] = {
@@ -42,12 +47,6 @@
 
 <div class="bar">
   <div class="steps">
-    <!-- <div class="step prev">
-      <i class="iconfont icon-prev" />
-    </div>
-    <div class="step next">
-      <i class="iconfont icon-next" />
-    </div> -->
     <div class="step back" on:click={() => pop()}>
       <i class="iconfont icon-arrow-up" />
     </div>
@@ -62,18 +61,23 @@
       </div>
     {:else}
       <div class="steps">
-        <a href="/folder" class="step main">
+        <a href={`/${rootPath ?? "folder"}`} class="step main" use:link>
           <i
             class="iconfont {parseSteps.length === 0
-              ? 'icon-server'
-              : 'icon-folder-fill'}"
+              ? rootSimpleIcon ?? 'icon-server'
+              : rootIcon ?? 'icon-folder-fill'}"
             on:click|preventDefault={() => {
               push("/folder").then(() => {
                 dispatch("changeNav");
               });
             }}
+            style={`color:${
+              parseSteps.length === 0
+                ? rootSimpleIconColor ?? "#6dc7ff"
+                : rootIconColor ?? "#ffe896"
+            }`}
           />
-          {parseSteps.length === 0 ? "FFServer" : ""}
+          {parseSteps.length === 0 ? rootPath ?? "FFServer" : rootPath ?? ""}
         </a>
         {#each parseSteps as path}
           <i class="iconfont icon-step" />
@@ -86,6 +90,7 @@
               });
             }}
             title={path.path}
+            use:link
           >
             <div>{path.path}</div>
           </a>
@@ -232,6 +237,9 @@
               }
               &.icon-server {
                 color: rgb(109, 199, 255);
+                margin-right: 6px;
+              }
+              &.icon-download {
                 margin-right: 6px;
               }
             }
