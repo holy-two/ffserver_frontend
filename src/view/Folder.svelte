@@ -18,7 +18,7 @@
   } from "../api/cmd";
   import dayjs from "dayjs";
 
-  import Layout from "../layout/index.svelte";
+  import Layout, { FileMenuType } from "../layout/index.svelte";
   import {
     defaultType,
     fileicon_map,
@@ -127,10 +127,23 @@
   const getCurretPath = () =>
     location.hash.replace("#/folder", "/").replace("//", "/");
 
-  const fileMenuClickHandle = async (
-    e: CustomEvent<LayoutEvents["FileMenuClick"]>
-  ) => {
-    const { type } = e.detail;
+  const itemPaste = async () => {
+    if ($cutItem.fromPath === getCurretPath()) {
+      $cutItem = null;
+      refreshLs();
+      return;
+    }
+    const from = parseMorePath(
+      $cutItem.fromPath + "/" + $cutItem.itemValue.name
+    );
+    const to = parseMorePath(getCurretPath() + "/" + $cutItem.itemValue.name);
+    const [res, err] = await promiseCatch(
+      move(from, to, $cutItem.itemValue.type)
+    );
+    $cutItem = null;
+    handleCustomRespose(res, err, refreshLs);
+  };
+  const itemCmds = async (type: FileMenuType) => {
     if (type === "mkdir") {
       const [res, err] = await promiseCatch<boolean, any>(
         mkdir(getCurretPath())
@@ -142,21 +155,14 @@
       );
       handleCustomRespose(res, err, refreshLs);
     } else if (type === "paste") {
-      if ($cutItem.fromPath === getCurretPath()) {
-        $cutItem = null;
-        refreshLs();
-        return;
-      }
-      const from = parseMorePath(
-        $cutItem.fromPath + "/" + $cutItem.itemValue.name
-      );
-      const to = parseMorePath(getCurretPath() + "/" + $cutItem.itemValue.name);
-      const [res, err] = await promiseCatch(
-        move(from, to, $cutItem.itemValue.type)
-      );
-      $cutItem = null;
-      handleCustomRespose(res, err, refreshLs);
+      await itemPaste();
     }
+  };
+  const fileMenuClickHandle = async (
+    e: CustomEvent<LayoutEvents["FileMenuClick"]>
+  ) => {
+    const { type } = e.detail;
+    await itemCmds(type);
   };
 
   const windowHashChangeHandle = async () => {
@@ -211,9 +217,10 @@
       fromPath: getCurretPath(),
       itemValue: activeListItem,
     });
-  const mouseupCutHandle = (e: KeyboardEvent) => {
-    if (e.ctrlKey && e.key === PURE_KEY_TYPE.X) {
-      itemCut();
+  const mouseupCutHandle = async (e: KeyboardEvent) => {
+    if (e.ctrlKey) {
+      if (e.key === PURE_KEY_TYPE.X) return itemCut();
+      if (e.key === PURE_KEY_TYPE.V) return await itemPaste();
     }
   };
 

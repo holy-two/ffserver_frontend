@@ -1,4 +1,5 @@
 export enum PURE_KEY_TYPE {
   Delete = 'Delete',
-  X = "x"
+  X = "x",
+  V = "v"
 }
