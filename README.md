@@ -10,7 +10,7 @@ yarn dev
 
 ## 效果截图
 
-![image-20220322170942153](https://raw.githubusercontent.com/mowtwo/pic-go/main/markdown/image-20220322170942153.png)
+![image-20220325154322667](https://raw.githubusercontent.com/mowtwo/pic-go/main/markdown/image-20220325154322667.png)
 
 ## TODO
 
@@ -21,13 +21,15 @@ yarn dev
   - [ ] 文件排序
   - [ ] 文件多选操作
 - [x] 上传文件/新建文件夹
-- [ ] 移动文件/重命名
-- [ ] 删除文件
+- [x] 移动文件/重命名
+- [x] 删除文件
+- [ ] 二维码下载/分享
+- [ ] 自定义弹窗
 - [ ] 路径导航需要实现过长折叠
 
 ### 后端
 
 - [x] 读取文件列表
 - [x] 上传文件
-- [ ] 移动文件/重命名
+- [x] 移动文件/重命名
 - [x] 删除文件

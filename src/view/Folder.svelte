@@ -140,8 +140,14 @@
     const [res, err] = await promiseCatch(
       move(from, to, $cutItem.itemValue.type)
     );
-    $cutItem = null;
-    handleCustomRespose(res, err, refreshLs);
+    if (!err && res) {
+      $cutItem = null;
+      refreshLs();
+    } else if (!res) {
+      return;
+    } else {
+      alert(err);
+    }
   };
   const itemCmds = async (type: FileMenuType) => {
     if (type === "mkdir") {
@@ -266,9 +272,12 @@
           hideAll();
           activeListItem = null;
         }}
-        on:contextmenu={() => {
+        on:contextmenu|preventDefault|stopPropagation={(e) => {
+          hideAll();
           activeListItem = null;
           $systemMenuShow = true;
+          $systemMenuX = e.clientX;
+          $systemMenuY = e.clientY;
         }}
       >
         <table on:contextmenu|stopPropagation|preventDefault>
@@ -500,6 +509,54 @@
       >
         <i slot="icon" class="iconfont icon-qrcode" style="color:#333" />
         Create Share QRCode
+      </ContentMenuItem>
+    </ContentMenuGroup>
+  </ContentMenu>
+  <ContentMenu x={$systemMenuX} y={$systemMenuY} bind:show={$systemMenuShow}>
+    <ContentMenuGroup>
+      <ContentMenuItem
+        on:click={() =>
+          itemCmds("upload").then(() => ($systemMenuShow = false))}
+      >
+        <i slot="icon" class="iconfont icon-upload" style="color:#4478d2" />
+        Upload File
+      </ContentMenuItem>
+      <ContentMenuItem
+        on:click={() => itemCmds("mkdir").then(() => ($systemMenuShow = false))}
+      >
+        <i slot="icon" class="iconfont icon-new-folder" style="color:#f0d05f" />
+        New Folder
+      </ContentMenuItem>
+    </ContentMenuGroup>
+    <ContentMenuGroup>
+      <ContentMenuItem
+        on:click={async () => {
+          await itemCmds("paste");
+          $systemMenuShow = false;
+        }}
+        disabled={!$cutItem}>Paste</ContentMenuItem
+      >
+    </ContentMenuGroup>
+    <ContentMenuGroup>
+      <ContentMenuItem
+        on:click={() => {
+          refreshLs();
+          $cutItem = null;
+          $systemMenuShow = false;
+        }}
+      >
+        Refresh
+      </ContentMenuItem>
+    </ContentMenuGroup>
+    <ContentMenuGroup>
+      <ContentMenuItem
+        on:click={unImplWarm}
+        on:click={() => {
+          $systemMenuShow = false;
+        }}
+      >
+        <i slot="icon" class="iconfont icon-info" style="color:#0066b4" />
+        About
       </ContentMenuItem>
     </ContentMenuGroup>
   </ContentMenu>
