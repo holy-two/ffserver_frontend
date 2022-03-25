@@ -65,7 +65,11 @@
     fileInfoWidth = fileInfoThis.clientWidth ?? 278;
   };
 
-  let fileList: Item[] = [];
+  let itemList: Item[] = [];
+  $: folderList = itemList.filter(
+    (item) => item.type === "folder"
+  ) as FolderItem[];
+  $: fileList = itemList.filter((item) => item.type === "file") as FileItem[];
   let activeListItem: Item = null;
   const folderDbClick = (item: FolderItem) => {
     let comePath = location.hash.replace("#/", "/");
@@ -84,10 +88,10 @@
     clearTimeout(refreshHiddenTimer as number);
     refreshLoading = true;
     refreshTimer = setTimeout(() => {
-      fileList = [];
+      itemList = [];
       ls(getCurretPath())
         .then((res) => {
-          fileList = res.map((item) => {
+          itemList = res.map((item) => {
             if (item.type === "folder") {
               return {
                 type: "folder",
@@ -217,78 +221,77 @@
             </tr>
           </thead>
           <tbody>
+            {#each folderList as item}
+              <tr
+                class:active={activeListItem === item}
+                on:touchend={() => {
+                  if (activeListItem === item) {
+                    folderDbClick(item);
+                  }
+                }}
+                on:contextmenu={(e) => {
+                  activeListItem = item;
+                  $folderMenuX = e.clientX;
+                  $folderMenuY = e.clientY;
+                }}
+                on:contextmenu={() => {
+                  hideAll();
+                  $folderMenuShow = true;
+                }}
+                on:click|stopPropagation={() => {
+                  activeListItem = item;
+                  hideAll();
+                }}
+                on:dblclick={() => folderDbClick(item)}
+              >
+                <td>
+                  <i class="iconfont icon-folder-fill" />
+                  {item.name}
+                </td>
+                <td>{item.modify}</td>
+                <td>{item.modify}</td>
+                <td />
+              </tr>
+            {/each}
             {#each fileList as item}
-              {#if item.type === "folder"}
-                <tr
-                  class:active={activeListItem === item}
-                  on:touchend={() => {
-                    if (activeListItem === item) {
-                      folderDbClick(item);
-                    }
-                  }}
-                  on:contextmenu={(e) => {
-                    activeListItem = item;
-                    $folderMenuX = e.clientX;
-                    $folderMenuY = e.clientY;
-                  }}
-                  on:contextmenu={() => {
-                    hideAll();
-                    $folderMenuShow = true;
-                  }}
-                  on:click|stopPropagation={() => {
-                    activeListItem = item;
-                    hideAll();
-                  }}
-                  on:dblclick={() => folderDbClick(item)}
-                >
-                  <td>
-                    <i class="iconfont icon-folder-fill" />
-                    {item.name}
-                  </td>
-                  <td>{item.modify}</td>
-                  <td>{item.modify}</td>
-                  <td />
-                </tr>
-              {:else}
-                <tr
-                  class:active={activeListItem === item}
-                  on:touchend={() => {
-                    if (activeListItem === item) {
-                      download(item.download, item.name);
-                    }
-                  }}
-                  on:contextmenu={(e) => {
-                    activeListItem = item;
-                    $fileMenuX = e.clientX;
-                    $fileMenuY = e.clientY;
-                  }}
-                  on:contextmenu={() => {
-                    hideAll();
-                    $fileMenuShow = true;
-                  }}
-                  on:click|stopPropagation={() => {
-                    activeListItem = item;
-                    hideAll();
-                  }}
-                  on:dblclick={() => download(item.download, item.name)}
-                >
-                  <td>
-                    <i
-                      class="iconfont icon-{fileicon_map?.[item.fileType]
-                        ?.icon ?? defaultIcon.icon}"
-                      style={fileicon_map?.[item.fileType]?.color
-                        ? `color:${fileicon_map?.[item.fileType]?.color}`
-                        : ""}
-                    />
-                    {item.name}
-                  </td>
-                  <td>{item.modify}</td>
-                  <td>{item.modify}</td>
-                  <td>
-                    {item.size}
-                  </td>
-                </tr>
-              {/if}
+              <tr
+                class:active={activeListItem === item}
+                on:touchend={() => {
+                  if (activeListItem === item) {
+                    download(item.download, item.name);
+                  }
+                }}
+                on:contextmenu={(e) => {
+                  activeListItem = item;
+                  $fileMenuX = e.clientX;
+                  $fileMenuY = e.clientY;
+                }}
+                on:contextmenu={() => {
+                  hideAll();
+                  $fileMenuShow = true;
+                }}
+                on:click|stopPropagation={() => {
+                  activeListItem = item;
+                  hideAll();
+                }}
+                on:dblclick={() => download(item.download, item.name)}
+              >
+                <td>
+                  <i
+                    class="iconfont icon-{fileicon_map?.[item.fileType]?.icon ??
+                      defaultIcon.icon}"
+                    style={fileicon_map?.[item.fileType]?.color
+                      ? `color:${fileicon_map?.[item.fileType]?.color}`
+                      : ""}
+                  />
+                  {item.name}
+                </td>
+                <td>{item.modify}</td>
+                <td>{item.modify}</td>
+                <td>
+                  {item.size}
+                </td>
+              </tr>
             {/each}
           </tbody>
         </table>
@@ -309,7 +312,7 @@
             {#if activeListItem}
               {activeListItem.name}
             {:else}
-              {fileList.length} Items
+              {itemList.length} Items
             {/if}
           </div>
           <div class="type" style={`width:${fileInfoWidth - 40}px`}>
@@ -354,7 +357,7 @@
     </div>
     <div class="footer">
       <div class="info">
-        {fileList.length} Items
+        {itemList.length} Items
       </div>
       {#if activeListItem}
         <div class="info">

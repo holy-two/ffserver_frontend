@@ -89,10 +89,10 @@ export async function ls<D extends LsResult[] = LsResult[]>(path: string) {
   }
 }
 
-export async function rm_f<D extends LsResult[] = LsResult[]>(path: string, name?: string) {
+export async function rm_f(path: string, name?: string) {
   try {
     if (confirm(`You want to delete file ${name ? name : path}?`)) {
-      await del<D>('file', path)
+      await del('file', path)
       return true
     } else {
       return false
@@ -101,6 +101,20 @@ export async function rm_f<D extends LsResult[] = LsResult[]>(path: string, name
     throw new Error(err('rm -f', e))
   }
 }
+
+export async function rm_rf(path: string, name?: string) {
+  try {
+    if (confirm(`You want to delete folder ${name ? name : path}?`)) {
+      await del('folder', path)
+      return true
+    } else {
+      return false
+    }
+  } catch (e) {
+    throw new Error(err('rm -rf', e))
+  }
+}
+
 
 export async function download(path: string, filename: string) {
   const a = document.createElement('a')
