@@ -1,21 +1,5 @@
 <script lang="ts" context="module">
-  interface IItem {
-    name: string;
-    modify: string;
-    created: string;
-  }
-
-  interface FolderItem extends IItem {
-    type: "folder";
-  }
-  interface FileItem extends IItem {
-    type: "file";
-    fileType: PURE_FILE_TYPE;
-    size: string;
-    download: string;
-  }
-
-  type Item = FileItem | FolderItem;
+  import type { FolderItem, FileItem, Item } from "../type";
 
   let refreshTimer: unknown;
   let refreshHiddenTimer: unknown;
@@ -269,7 +253,7 @@
                   {item.name}
                 </td>
                 <td>{item.modify}</td>
-                <td>{item.modify}</td>
+                <td>Folder</td>
                 <td />
               </tr>
             {/each}
@@ -307,7 +291,7 @@
                   {item.name}
                 </td>
                 <td>{item.modify}</td>
-                <td>{item.modify}</td>
+                <td>{PURE_FILE_TYPE[item.fileType]} File</td>
                 <td>
                   {item.size}
                 </td>
