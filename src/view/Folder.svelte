@@ -175,6 +175,10 @@
     refreshLs();
   };
 
+  const isCutingItem = (item: Item) =>
+    getCurretPath() === $cutItem?.fromPath &&
+    $cutItem?.itemValue.name === item.name;
+
   const delFile = async () => {
     if (activeListItem.type === "file") {
       const [res, err] = await promiseCatch(
@@ -183,7 +187,9 @@
           activeListItem.name
         )
       );
-      $cutItem = null;
+      if (isCutingItem(activeListItem)) {
+        $cutItem = null;
+      }
       handleCustomRespose(res, err, refreshLs);
     }
   };
@@ -195,13 +201,16 @@
           activeListItem.name
         )
       );
-      $cutItem = null;
+      if (isCutingItem(activeListItem)) {
+        $cutItem = null;
+      }
       handleCustomRespose(res, err, refreshLs);
     }
   };
   const handleDelKeyup = async (e: KeyboardEvent) => {
     if (e.shiftKey && e.key === PURE_KEY_TYPE.Delete && activeListItem) {
-      delFile();
+      await delFile();
+      await delFolder();
     }
   };
 
