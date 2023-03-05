@@ -124,9 +124,10 @@
     refreshLs();
   });
 
-  const getCurretPath = () =>
-    location.hash.replace("#/folder", "/").replace("//", "/");
-
+  const getCurretPath = (isDecode: boolean = false) => {
+    const cwd = location.hash.replace("#/folder", "/");
+    return (isDecode ? decodeURIComponent(cwd) : cwd).replace("//", "/");
+  };
   const itemPaste = async () => {
     if ($cutItem.fromPath === getCurretPath()) {
       $cutItem = null;
@@ -136,7 +137,9 @@
     const from = parseMorePath(
       $cutItem.fromPath + "/" + $cutItem.itemValue.name
     );
-    const to = parseMorePath(getCurretPath() + "/" + $cutItem.itemValue.name);
+    const to = parseMorePath(
+      getCurretPath(true) + "/" + $cutItem.itemValue.name
+    );
     const [res, err] = await promiseCatch(
       move(from, to, $cutItem.itemValue.type)
     );
@@ -251,7 +254,8 @@
   on:keyup|preventDefault={mouseupCutHandle}
   on:blur={mouseupFileInfoHandle}
   on:mouseup={mouseupFileInfoHandle}
-  on:mousemove={resizeFileInfoHandle} />
+  on:mousemove={resizeFileInfoHandle}
+/>
 
 <Layout
   {pathSteps}
